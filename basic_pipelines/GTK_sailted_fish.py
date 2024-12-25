@@ -262,12 +262,17 @@ if __name__ == "__main__":
     game_thread = threading.Thread(target=game_loop, args=(gui,), daemon=True)
     game_thread.start()
 
+    # Run the GStreamer application
+    app = GStreamerPoseEstimationApp(app_callback, user_data)
+    app.run()
+
+
     # Run the GUI and the GStreamer application
-    gui.connect("destroy", Gtk.main_quit)
-    gui.show_all()
-    Gst.init(None)
-    threading.Thread(
-        target=lambda: GStreamerPoseEstimationApp(app_callback, user_data, camera=args.camera).run(),
-        daemon=True
-    ).start()
-    Gtk.main()
+#    gui.connect("destroy", Gtk.main_quit)
+#    gui.show_all()
+#    Gst.init(None)
+#    threading.Thread(
+#        target=lambda: GStreamerPoseEstimationApp(app_callback, user_data, camera=args.camera).run(),
+#        daemon=True
+#    ).start()
+#    Gtk.main()
