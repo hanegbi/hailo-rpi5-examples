@@ -7,9 +7,8 @@ import cv2
 import hailo
 import time
 import threading
-import argparse
+import argparse  # For parsing command-line arguments
 import sys
-
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
@@ -31,7 +30,6 @@ game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
 moved_players = set()  # Set to store players who moved during "Red Light"
 all_players = set()  # Set to store all detected players
-winner_declared = False  # Flag to indicate if a winner has been declared
 
 # -----------------------------------------------------------------------------------------------
 # Levels Definition
@@ -56,12 +54,14 @@ def set_level(level):
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
 def game_loop():
-    global game_state, moved_players, all_players, winner_declared
+    global game_state, moved_players, all_players
 
-    while not winner_declared:
-        # Green Light phase
+    while True:
+        # Green Light phase (start a new game)
         game_state = "Green Light"
-        print("Green Light! Players can move.")
+        print("Green Light! Players can move. Starting a new game.")
+        moved_players.clear()
+        all_players.clear()
         time.sleep(10)  # Duration for Green Light
 
         # Red Light phase
@@ -69,33 +69,29 @@ def game_loop():
         print("Red Light! Players must stop.")
         time.sleep(30)  # Duration for Red Light
 
-        # Check for a winner at the end of "Red Light"
+        # Determine winner during Red Light
         if len(all_players) > 1:
             non_moved_players = all_players - moved_players
             if len(non_moved_players) == 1:
-                winner = non_moved_players.pop()  # Identify the single winner
+                winner = non_moved_players.pop()
                 print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
-                winner_declared = True
-                break
             elif len(non_moved_players) > 1:
-                print("Multiple players didn't move. Continuing...")
+                print("Multiple players didn't move. No winner this round.")
             else:
                 print("No winner. All players moved during Red Light!")
+        elif len(all_players) == 1:
+            winner = list(all_players)[0]
+            print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
 
-        # Reset for the next round
-        moved_players.clear()
-        all_players.clear()
-
-    print("Game over. A winner has been declared.")
+        # Pause for 10 seconds before starting a new game
+        print("Pausing for 10 seconds before the next round...")
+        time.sleep(10)
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 def app_callback(pad, info, user_data):
-    global game_state, frame_history, moved_players, threshold, all_players, winner_declared
-
-    if winner_declared:
-        return Gst.PadProbeReturn.OK  # Stop processing once a winner is declared
+    global game_state, frame_history, moved_players, threshold, all_players
 
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
