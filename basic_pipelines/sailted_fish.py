@@ -7,6 +7,7 @@ import cv2
 import hailo
 import time
 import threading
+import argparse  # For parsing command-line arguments
 
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
@@ -30,6 +31,25 @@ frame_history = {}  # Dictionary to store pose keypoints for movement detection
 moved_players = set()  # Set to store players who moved during "Red Light"
 
 # -----------------------------------------------------------------------------------------------
+# Levels Definition
+# -----------------------------------------------------------------------------------------------
+level_thresholds = {
+    "easy": 1500,
+    "medium": 1000,
+    "hard": 500,
+}
+
+def set_level(level):
+    """Set the threshold based on the chosen level."""
+    global threshold
+    if level in level_thresholds:
+        threshold = level_thresholds[level]
+        print(f"Game level set to {level.capitalize()}. Movement threshold: {threshold}")
+    else:
+        print(f"Invalid level: {level}. Defaulting to 'easy'.")
+        threshold = level_thresholds["easy"]
+
+# -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
 def game_loop():
@@ -49,7 +69,7 @@ def game_loop():
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 def app_callback(pad, info, user_data):
-    global game_state, frame_history
+    global game_state, frame_history, moved_players, threshold
 
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
@@ -102,9 +122,9 @@ def app_callback(pad, info, user_data):
                     # Calculate movement by summing the distance between keypoints
                     movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
                                    for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > 1500 and person_id not in moved_players:
+                    if movement > threshold and person_id not in moved_players:
                         moved_players.add(person_id)
-                        print(f"Player {person_id} moved during Red Light!")
+                        print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
@@ -146,6 +166,20 @@ def get_keypoints():
 # Main Function
 # -----------------------------------------------------------------------------------------------
 if __name__ == "__main__":
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Red Light Green Light Game")
+    parser.add_argument(
+        "--level",
+        type=str,
+        choices=["easy", "medium", "hard"],
+        default="easy",
+        help="Set the game difficulty level (default: easy)",
+    )
+    args = parser.parse_args()
+
+    # Set the level based on the argument
+    set_level(args.level)
+
     # Create an instance of the user app callback class
     user_data = user_app_callback_class()
 
