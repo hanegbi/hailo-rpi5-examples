@@ -60,7 +60,7 @@ def game_loop():
         # Green Light phase (start a new game)
         game_state = "Green Light"
         print("Green Light! Players can move. Starting a new game.")
-        moved_players.clear()
+        moved_players.clear()  # Reset moved players for the new round
         all_players.clear()
         time.sleep(10)  # Duration for Green Light
 
@@ -79,9 +79,6 @@ def game_loop():
                 print("Multiple players didn't move. No winner this round.")
             else:
                 print("No winner. All players moved during Red Light!")
-        elif len(all_players) == 1:
-            winner = list(all_players)[0]
-            print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
 
         # Pause for 10 seconds before starting a new game
         print("Pausing for 10 seconds before the next round...")
@@ -140,16 +137,17 @@ def app_callback(pad, info, user_data):
                 frame_history[person_id].append(keypoint_coords)
 
                 # Detect movement during "Red Light"
-                if game_state == "Red Light" and len(frame_history[person_id]) > 1:
-                    prev_coords = frame_history[person_id][-2]
-                    curr_coords = frame_history[person_id][-1]
+                if game_state == "Red Light" and person_id not in moved_players:
+                    if len(frame_history[person_id]) > 1:
+                        prev_coords = frame_history[person_id][-2]
+                        curr_coords = frame_history[person_id][-1]
 
-                    # Calculate movement by summing the distance between keypoints
-                    movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
-                                   for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > threshold:
-                        moved_players.add(person_id)
-                        print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
+                        # Calculate movement by summing the distance between keypoints
+                        movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
+                                       for prev, curr in zip(prev_coords, curr_coords))
+                        if movement > threshold:
+                            moved_players.add(person_id)
+                            print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
