@@ -70,7 +70,6 @@ def app_callback(pad, info, user_data):
 
     # Process detections
     for detection in detections:
-        detection.
         if detection.get_label() == "person":
             track_id = 0
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
