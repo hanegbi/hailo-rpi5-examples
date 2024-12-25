@@ -25,7 +25,7 @@ class MainGUI(Gtk.Window):
                 font-size: 16px;
                 padding: 10px;
             }
-        """.encode())
+        """)
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
         # Create a vertical box layout
