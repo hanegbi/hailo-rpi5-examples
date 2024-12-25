@@ -8,7 +8,7 @@ import hailo
 import time
 import threading
 import argparse  # For parsing command-line arguments
-
+impory sys
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
