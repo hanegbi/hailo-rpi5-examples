@@ -8,8 +8,8 @@ import cv2
 import hailo
 import time
 import threading
-import argparse
-
+import argparse  # For parsing command-line arguments
+import sys
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
@@ -30,6 +30,7 @@ class user_app_callback_class(app_callback_class):
 game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
 moved_players = set()  # Set to store players who moved during "Red Light"
+all_players = set()  # Set to store all detected players
 
 # -----------------------------------------------------------------------------------------------
 # Levels Definition
@@ -93,6 +94,8 @@ def game_loop(gui):
         game_state = "Green Light"
         GLib.idle_add(gui.update_game_state, "Green Light")
         print("Green Light! Players can move.")
+        moved_players.clear()
+        all_players.clear()
         time.sleep(10)  # Duration for Green Light
 
         # Red Light phase
@@ -101,11 +104,29 @@ def game_loop(gui):
         print("Red Light! Players must stop.")
         time.sleep(30)  # Duration for Red Light
 
+        # Determine winner during Red Light
+        if len(all_players) > 1:
+            non_moved_players = all_players - moved_players
+            if len(non_moved_players) == 1:
+                winner = non_moved_players.pop()
+                print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
+            elif len(non_moved_players) > 1:
+                print("Multiple players didn't move. No winner this round.")
+            else:
+                print("No winner. All players moved during Red Light!")
+        elif len(all_players) == 1:
+            winner = list(all_players)[0]
+            print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
+
+        # Pause for 10 seconds before starting a new game
+        print("Pausing for 10 seconds before the next round...")
+        time.sleep(10)
+
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 def app_callback(pad, info, user_data):
-    global game_state, frame_history, moved_players, threshold
+    global game_state, frame_history, moved_players, threshold, all_players
 
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
@@ -132,11 +153,14 @@ def app_callback(pad, info, user_data):
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
             if len(track) == 1:
                 track_id = track[0].get_id()
+
+            person_id = track_id  # Unique ID for each detection
+            all_players.add(person_id)  # Add to the set of all players
+
             # Get bounding box and landmarks
             bbox = detection.get_bbox()
             landmarks = detection.get_objects_typed(hailo.HAILO_LANDMARKS)
             if landmarks:
-                person_id = track_id  # Unique ID for each detection
                 points = landmarks[0].get_points()
                 if person_id not in frame_history:
                     frame_history[person_id] = []
@@ -158,7 +182,7 @@ def app_callback(pad, info, user_data):
                     # Calculate movement by summing the distance between keypoints
                     movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
                                    for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > threshold and person_id not in moved_players:
+                    if movement > threshold:
                         moved_players.add(person_id)
                         print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
 
@@ -212,15 +236,21 @@ if __name__ == "__main__":
         help="Set the game difficulty level (default: easy)",
     )
     parser.add_argument(
-        "--camera",
+        "--input",
         type=str,
-        help="Camera device (e.g., /dev/video0)",
         required=True,
+        help="Specify the input source (e.g., rpi or a video file path)",
     )
     args = parser.parse_args()
 
     # Set the level based on the argument
     set_level(args.level)
+    if "--level" in sys.argv:
+        index = sys.argv.index("--level")
+        del sys.argv[index:index + 2]  # Remove both --level and its value
+
+    # Print the input source
+    print(f"Input source: {args.input}")
 
     # Create an instance of the user app callback class
     user_data = user_app_callback_class()
