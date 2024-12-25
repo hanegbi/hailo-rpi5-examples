@@ -42,12 +42,12 @@ class MainGUI(Gtk.Window):
         self.box.pack_start(self.label, False, False, 10)
 
         # Add the Start button
-        self.start_button = Gtk.Button(label="▶ Start Game")
+        self.start_button = Gtk.Button(label="Start Game")
         self.start_button.connect("clicked", self.on_start_button_clicked)
         self.box.pack_start(self.start_button, False, False, 10)
 
         # Add the Stop button
-        self.stop_button = Gtk.Button(label="⏹ Stop Game")
+        self.stop_button = Gtk.Button(label="Stop Game")
         self.stop_button.connect("clicked", self.on_stop_button_clicked)
         self.box.pack_start(self.stop_button, False, False, 10)
 
