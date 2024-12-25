@@ -65,7 +65,6 @@ def game_loop():
         # time.sleep(5)  # Duration for Green Light
 
         # Red Light phase
-        game_state = "Red Light"
         print("\033[30;45m!!! 1 !!!\033[0m")
         time.sleep(1)
         print("\033[30;45m!!! 2 !!!\033[0m")
@@ -73,8 +72,8 @@ def game_loop():
         print("\033[30;45m!!! 3 !!!\033[0m")
         time.sleep(1)
         print("\033[30;45mSailted Fish\033[0m")
-        time.sleep(1)
-        print("\033[30;45mDON'T MOVE!\033[0m")
+        print("\033[30;45mSTOPPPPPPP\033[0m")
+        game_state = "Red Light"
         time.sleep(20)  # Duration for Red Light
 
         # Determine winner during Red Light
