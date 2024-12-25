@@ -267,6 +267,11 @@ if __name__ == "__main__":
     app.run()
 
 
+    # Run the GUI
+    gui.connect("destroy", Gtk.main_quit)
+    gui.show_all()
+    Gtk.main()
+
     # Run the GUI and the GStreamer application
 #    gui.connect("destroy", Gtk.main_quit)
 #    gui.show_all()
