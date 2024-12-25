@@ -84,6 +84,13 @@ class RedLightGreenLightGUI(Gtk.Window):
         elif state == "Red Light":
             self.doll_image.set_from_file("doll_looking.png")
 
+
+    # Function to run the GUI
+def run_gui():
+    gui.connect("destroy", Gtk.main_quit)
+    gui.show_all()
+    Gtk.main()
+
 # -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
@@ -260,11 +267,6 @@ if __name__ == "__main__":
     # Create the GUI window
     gui = RedLightGreenLightGUI()
 
-    # Function to run the GUI
-    def run_gui():
-        gui.connect("destroy", Gtk.main_quit)
-        gui.show_all()
-        Gtk.main()
 
     # Start the GUI in a separate thread
     gui_thread = threading.Thread(target=run_gui, daemon=True)
