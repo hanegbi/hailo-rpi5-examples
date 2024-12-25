@@ -88,39 +88,40 @@ class RedLightGreenLightGUI(Gtk.Window):
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
 def game_loop(gui):
-    global game_state
+    global game_state, moved_players, all_players
     while True:
         # Green Light phase
         game_state = "Green Light"
         GLib.idle_add(gui.update_game_state, "Green Light")
         print("Green Light! Players can move.")
-        moved_players.clear()
+        moved_players.clear() # Reset moved players for the new round
         all_players.clear()
         time.sleep(10)  # Duration for Green Light
 
         # Red Light phase
         game_state = "Red Light"
         GLib.idle_add(gui.update_game_state, "Red Light")
-        print("Red Light! Players must stop.")
-        time.sleep(30)  # Duration for Red Light
+        print("\033[30;45mRed Light! Players must stop!!\033[0m")
+        time.sleep(20)  # Duration for Red Light
 
         # Determine winner during Red Light
         if len(all_players) > 1:
             non_moved_players = all_players - moved_players
             if len(non_moved_players) == 1:
                 winner = non_moved_players.pop()
-                print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
+                print(f"\033[100mPlayer {winner} is the winner!\033[0m")
             elif len(non_moved_players) > 1:
-                print("Multiple players didn't move. No winner this round.")
+                print("\033[30;47mMultiple players didn't move. No winner this round.\033[0m")
             else:
-                print("No winner. All players moved during Red Light!")
-        elif len(all_players) == 1:
-            winner = list(all_players)[0]
-            print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
+                print("\033[30;47mNo winner. All players moved during Red Light!\033[0m")
+#        elif len(all_players) == 1:
+#            winner = list(all_players)[0]
+#            print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
 
-        # Pause for 10 seconds before starting a new game
-        print("Pausing for 10 seconds before the next round...")
-        time.sleep(10)
+        print("\033[30;47mPausing for 10 seconds before the next round...\033[0m")
+        time.sleep(5)
+        print("\033[30;47mGet ready! staring in 5 seconds...\033[0m")
+        time.sleep(5)
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
@@ -175,16 +176,17 @@ def app_callback(pad, info, user_data):
                 frame_history[person_id].append(keypoint_coords)
 
                 # Detect movement during "Red Light"
-                if game_state == "Red Light" and len(frame_history[person_id]) > 1:
-                    prev_coords = frame_history[person_id][-2]
-                    curr_coords = frame_history[person_id][-1]
+                if game_state == "Red Light" and person_id not in moved_players:
+                    if len(frame_history[person_id]) > 1:
+                        prev_coords = frame_history[person_id][-2]
+                        curr_coords = frame_history[person_id][-1]
 
-                    # Calculate movement by summing the distance between keypoints
-                    movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
-                                   for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > threshold:
-                        moved_players.add(person_id)
-                        print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
+                        # Calculate movement by summing the distance between keypoints
+                        movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
+                                       for prev, curr in zip(prev_coords, curr_coords))
+                        if movement > threshold:
+                            moved_players.add(person_id)
+                            print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
@@ -272,12 +274,4 @@ if __name__ == "__main__":
     gui.show_all()
     Gtk.main()
 
-    # Run the GUI and the GStreamer application
-#    gui.connect("destroy", Gtk.main_quit)
-#    gui.show_all()
-#    Gst.init(None)
-#    threading.Thread(
-#        target=lambda: GStreamerPoseEstimationApp(app_callback, user_data, camera=args.camera).run(),
-#        daemon=True
-#    ).start()
-#    Gtk.main()
+
