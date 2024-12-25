@@ -27,8 +27,8 @@ class MainGUI(Gtk.Window):
         try:
             # Launch the secondary script
             script_path = os.path.join(os.path.dirname(__file__), "sailted_fish.py --input rpi")
-            subprocess.Popen(["python3", script_path])
-            self.label.set_text("Secondary script started!")
+            subprocess.Popen(["python3", script_path, "--input", "rpi"])
+            self.label.set_text("Game started!")
         except Exception as e:
             self.label.set_text(f"Error: {e}")
 
