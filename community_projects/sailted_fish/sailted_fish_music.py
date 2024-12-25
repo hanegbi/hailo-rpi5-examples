@@ -61,14 +61,14 @@ def game_loop():
 
     pygame.mixer.init() 
 
-    pygame.mixer.music.load(C:\Users\yaronh\workspace\hailo-rpi5-examples\community_projects\sailted_fish\trumpet-call-97342.mp3) 
+    pygame.mixer.music.load("/home/hailo/workspace/hailo-rpi5-examples/community_projects/sailted_fish/trumpet-call-97342.mp3") 
 
 
 
     while True:
         # Green Light phase (start a new game)
         game_state = "Green Light"
-        pygame.mixer.music.play()
+        pygame.mixer.music.play(-1)
         # print("\033[30;42mGreen Light! Players can move. Starting a new game soon.\033[0m")
         moved_players.clear()  # Reset moved players for the new round
         all_players.clear()
