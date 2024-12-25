@@ -1,54 +1,15 @@
-import gi
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib
-import os
-import numpy as np
-import cv2
-import hailo
-import time
-import threading
-
-from hailo_apps_infra.hailo_rpi_common import (
-    get_caps_from_pad,
-    get_numpy_from_buffer,
-    app_callback_class,
-)
-from hailo_apps_infra.pose_estimation_pipeline import GStreamerPoseEstimationApp
-
-# -----------------------------------------------------------------------------------------------
-# User-defined class to be used in the callback function
-# -----------------------------------------------------------------------------------------------
-class user_app_callback_class(app_callback_class):
-    def __init__(self):
-        super().__init__()
-
 # -----------------------------------------------------------------------------------------------
 # Globals for Game Logic
 # -----------------------------------------------------------------------------------------------
 game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
-
-# -----------------------------------------------------------------------------------------------
-# Game Loop for Red Light, Green Light
-# -----------------------------------------------------------------------------------------------
-def game_loop():
-    global game_state
-    while True:
-        # Green Light phase
-        game_state = "Green Light"
-        print("Green Light! Players can move.")
-        time.sleep(10)  # Duration for Green Light
-
-        # Red Light phase
-        game_state = "Red Light"
-        print("Red Light! Players must stop.")
-        time.sleep(30)  # Duration for Red Light
+moved_players = set()  # Set to track players who have moved during Red Light
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 def app_callback(pad, info, user_data):
-    global game_state, frame_history
+    global game_state, frame_history, moved_players
 
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
@@ -75,11 +36,17 @@ def app_callback(pad, info, user_data):
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
             if len(track) == 1:
                 track_id = track[0].get_id()
+
+            person_id = track_id  # Unique ID for each detection
+
+            # Skip players who have already moved
+            if person_id in moved_players:
+                continue
+
             # Get bounding box and landmarks
             bbox = detection.get_bbox()
             landmarks = detection.get_objects_typed(hailo.HAILO_LANDMARKS)
             if landmarks:
-                person_id = track_id  # Unique ID for each detection
                 points = landmarks[0].get_points()
                 if person_id not in frame_history:
                     frame_history[person_id] = []
@@ -101,9 +68,9 @@ def app_callback(pad, info, user_data):
                     # Calculate movement by summing the distance between keypoints
                     movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
                                    for prev, curr in zip(prev_coords, curr_coords))
-                    print(f"Player {person_id} movement: {movement}")
-                    if movement > 15000:  # Threshold for significant movement
-                        print(f"Player {person_id} moved during Red Light!")
+                    if movement > 1500:  # Threshold for significant movement
+                        print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")
+                        moved_players.add(person_id)  # Add to moved players set
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
@@ -115,43 +82,3 @@ def app_callback(pad, info, user_data):
         user_data.set_frame(frame)
 
     return Gst.PadProbeReturn.OK
-
-# -----------------------------------------------------------------------------------------------
-# Keypoints Mapping
-# -----------------------------------------------------------------------------------------------
-def get_keypoints():
-    """Get the COCO keypoints and their left/right flip correspondence map."""
-    return {
-        'nose': 0,
-        'left_eye': 1,
-        'right_eye': 2,
-        'left_ear': 3,
-        'right_ear': 4,
-        'left_shoulder': 5,
-        'right_shoulder': 6,
-        'left_elbow': 7,
-        'right_elbow': 8,
-        'left_wrist': 9,
-        'right_wrist': 10,
-        'left_hip': 11,
-        'right_hip': 12,
-        'left_knee': 13,
-        'right_knee': 14,
-        'left_ankle': 15,
-        'right_ankle': 16,
-    }
-
-# -----------------------------------------------------------------------------------------------
-# Main Function
-# -----------------------------------------------------------------------------------------------
-if __name__ == "__main__":
-    # Create an instance of the user app callback class
-    user_data = user_app_callback_class()
-
-    # Start the game loop in a separate thread
-    game_thread = threading.Thread(target=game_loop, daemon=True)
-    game_thread.start()
-
-    # Run the GStreamer application
-    app = GStreamerPoseEstimationApp(app_callback, user_data)
-    app.run()
