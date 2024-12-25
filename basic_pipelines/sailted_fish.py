@@ -27,28 +27,30 @@ class user_app_callback_class(app_callback_class):
 # -----------------------------------------------------------------------------------------------
 game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
+colour_frame_red = False  # Flag to indicate if the frame should be coloured red
 
 # -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
 def game_loop():
-    global game_state
+    global game_state, colour_frame_red
     while True:
         # Green Light phase
         game_state = "Green Light"
+        colour_frame_red = False
         print("Green Light! Players can move.")
         time.sleep(5)  # Duration for Green Light
 
         # Red Light phase
         game_state = "Red Light"
         print("Red Light! Players must stop.")
-        time.sleep(5)  # Duration for Red Light
+        time.sleep(30)  # Duration for Red Light
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 def app_callback(pad, info, user_data):
-    global game_state, frame_history
+    global game_state, frame_history, colour_frame_red
 
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
@@ -97,16 +99,20 @@ def app_callback(pad, info, user_data):
                     # Calculate movement by summing the distance between keypoints
                     movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
                                    for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > 10:  # Threshold for significant movement
+                    if movement > 1500:  # Threshold for significant movement
                         print(f"Player {person_id} moved during Red Light!")
+                        colour_frame_red = True
 
-    # Draw keypoints on the frame (optional visualisation)
-    if user_data.use_frame and frame is not None:
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        for person_id, keypoints in frame_history.items():
-            if keypoints:
-                for point in keypoints[-1]:  # Draw the most recent keypoints
-                    cv2.circle(frame, point, 5, (0, 255, 0), -1)
+    # Modify frame colour based on game state
+    if frame is not None:
+        if game_state == "Red Light" and colour_frame_red:
+            # Colour the frame red
+            frame[:, :, 0] = 0  # Zero out blue channel
+            frame[:, :, 1] = 0  # Zero out green channel
+        else:
+            # Convert frame to BGR for Green Light or no motion detected
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
         user_data.set_frame(frame)
 
     return Gst.PadProbeReturn.OK
