@@ -61,7 +61,7 @@ def game_loop():
 
     pygame.mixer.init() 
 
-    pygame.mixer.music.load("/home/hailo/workspace/hailo-rpi5-examples/community_projects/sailted_fish/trumpet-call-97342.mp3") 
+    pygame.mixer.music.load("/home/hailo/workspace/hailo-rpi5-examples/community_projects/sailted_fish/music_for_green_light.mp3") 
 
 
 
