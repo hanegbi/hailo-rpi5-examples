@@ -59,14 +59,18 @@ def game_loop():
     while True:
         # Green Light phase (start a new game)
         game_state = "Green Light"
-        print("\033[30;42mGreen Light! Players can move. Starting a new game soon.\033[0m")
+        # print("\033[30;42mGreen Light! Players can move. Starting a new game soon.\033[0m")
         moved_players.clear()  # Reset moved players for the new round
         all_players.clear()
-        time.sleep(5)  # Duration for Green Light
+        # time.sleep(5)  # Duration for Green Light
 
         # Red Light phase
         game_state = "Red Light"
-        print("\033[30;45mRed Light! Players must stop!!\033[0m")
+        print("\033[30;45m!!! 1 !!!\033[0m")
+        print("\033[30;45m!!! 2 !!!\033[0m")
+        print("\033[30;45m!!! 3 !!!\033[0m")
+        print("\033[30;45mSailted Fish\033[0m")
+        print("\033[30;45mSTOPPPPPPP\033[0m")
         time.sleep(20)  # Duration for Red Light
 
         # Determine winner during Red Light
