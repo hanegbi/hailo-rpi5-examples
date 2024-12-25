@@ -214,6 +214,9 @@ if __name__ == "__main__":
 
     # Set the level based on the argument
     set_level(args.level)
+    if "--level" in sys.argv:
+        index = sys.argv.index("--level")
+        del sys.argv[index:index + 2]  # Remove both --level and its value
 
     # Print the input source
     print(f"Input source: {args.input}")
