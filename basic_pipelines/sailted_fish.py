@@ -28,6 +28,7 @@ class user_app_callback_class(app_callback_class):
 game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
 colour_frame_red = False  # Flag to indicate if the frame should be coloured red
+movement_threshold = 1500  # Threshold for significant movement
 
 # -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
@@ -39,12 +40,12 @@ def game_loop():
         game_state = "Green Light"
         colour_frame_red = False
         print("Green Light! Players can move.")
-        time.sleep(5)  # Duration for Green Light
+        time.sleep(10)  # Duration for Green Light (10 seconds)
 
         # Red Light phase
         game_state = "Red Light"
         print("Red Light! Players must stop.")
-        time.sleep(30)  # Duration for Red Light
+        time.sleep(30)  # Duration for Red Light (30 seconds)
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
@@ -69,6 +70,9 @@ def app_callback(pad, info, user_data):
 
     # Keypoints for COCO body parts
     keypoints = get_keypoints()
+
+    # Reset red frame flag for this cycle
+    colour_frame_red = False
 
     # Process detections
     for detection in detections:
@@ -99,19 +103,20 @@ def app_callback(pad, info, user_data):
                     # Calculate movement by summing the distance between keypoints
                     movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
                                    for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > 1500:  # Threshold for significant movement
+                    if movement > movement_threshold:  # Threshold for significant movement
                         print(f"Player {person_id} moved during Red Light!")
                         colour_frame_red = True
 
-    # Modify frame colour based on game state
+    # Modify frame colour based on game state and movement
     if frame is not None:
-        if game_state == "Red Light" and colour_frame_red:
+        if colour_frame_red:
             # Colour the frame red
             frame[:, :, 0] = 0  # Zero out blue channel
             frame[:, :, 1] = 0  # Zero out green channel
         else:
-            # Convert frame to BGR for Green Light or no motion detected
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            # Colour the frame green
+            frame[:, :, 2] = 0  # Zero out red channel
+            frame[:, :, 0] = 0  # Zero out blue channel
 
         user_data.set_frame(frame)
 
