@@ -258,26 +258,19 @@ if __name__ == "__main__":
     # Create the GUI window
     gui = RedLightGreenLightGUI()
 
-    # Start the game loop in a separate thread
-    game_thread = threading.Thread(target=game_loop, args=(gui,), daemon=True)
-    game_thread.start()
+# Start the game loop in a separate thread
+game_thread = threading.Thread(target=game_loop, args=(gui,), daemon=True)
+game_thread.start()
 
-    # Run the GStreamer application
-    app = GStreamerPoseEstimationApp(app_callback, user_data)
-    app.run()
+# Start the GStreamer application in a separate thread
+gstreamer_thread = threading.Thread(
+    target=lambda: GStreamerPoseEstimationApp(app_callback, user_data).run(),
+    daemon=True
+)
+gstreamer_thread.start()
 
+# Run the GUI
+gui.connect("destroy", Gtk.main_quit)
+gui.show_all()
+Gtk.main()
 
-    # Run the GUI
-    gui.connect("destroy", Gtk.main_quit)
-    gui.show_all()
-    Gtk.main()
-
-    # Run the GUI and the GStreamer application
-#    gui.connect("destroy", Gtk.main_quit)
-#    gui.show_all()
-#    Gst.init(None)
-#    threading.Thread(
-#        target=lambda: GStreamerPoseEstimationApp(app_callback, user_data, camera=args.camera).run(),
-#        daemon=True
-#    ).start()
-#    Gtk.main()
