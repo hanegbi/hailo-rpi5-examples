@@ -59,30 +59,31 @@ def game_loop():
     while True:
         # Green Light phase (start a new game)
         game_state = "Green Light"
-        print("Green Light! Players can move. Starting a new game.")
+        print("\033[30;42mGreen Light! Players can move. Starting a new game soon.\033[0m")
         moved_players.clear()  # Reset moved players for the new round
         all_players.clear()
-        time.sleep(10)  # Duration for Green Light
+        time.sleep(5)  # Duration for Green Light
 
         # Red Light phase
         game_state = "Red Light"
-        print("Red Light! Players must stop.")
-        time.sleep(30)  # Duration for Red Light
+        print("\033[30;45mRed Light! Players must stop!!\033[0m")
+        time.sleep(20)  # Duration for Red Light
 
         # Determine winner during Red Light
         if len(all_players) > 1:
             non_moved_players = all_players - moved_players
             if len(non_moved_players) == 1:
                 winner = non_moved_players.pop()
-                print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
+                print(f"\033[100mPlayer {winner} is the winner!\033[0m")
             elif len(non_moved_players) > 1:
-                print("Multiple players didn't move. No winner this round.")
+                print("\033[30;47mMultiple players didn't move. No winner this round.\033[0m")
             else:
-                print("No winner. All players moved during Red Light!")
+                print("\033[30;47mNo winner. All players moved during Red Light!\033[0m")
 
-        # Pause for 10 seconds before starting a new game
-        print("Pausing for 10 seconds before the next round...")
-        time.sleep(10)
+        print("\033[30;47mPausing for 10 seconds before the next round...\033[0m")
+        time.sleep(5)
+        print("\033[30;47mGet ready! staring in 5 seconds...\033[0m")
+        time.sleep(5)
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
