@@ -27,6 +27,7 @@ class user_app_callback_class(app_callback_class):
 # -----------------------------------------------------------------------------------------------
 game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
+player_moved = set()  # Set to keep track of players who moved
 
 # -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
@@ -48,7 +49,7 @@ def game_loop():
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 def app_callback(pad, info, user_data):
-    global game_state, frame_history
+    global game_state, frame_history, player_moved
 
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
@@ -76,6 +77,9 @@ def app_callback(pad, info, user_data):
             landmarks = detection.get_objects_typed(hailo.HAILO_LANDMARKS)
             if landmarks:
                 person_id = hash(detection)  # Unique ID for each detection
+                if person_id in player_moved:
+                    continue  # Skip further checks for players who already moved
+
                 points = landmarks[0].get_points()
                 if person_id not in frame_history:
                     frame_history[person_id] = []
@@ -99,7 +103,8 @@ def app_callback(pad, info, user_data):
                                    for prev, curr in zip(prev_coords, curr_coords))
                     print(f"Player {person_id} movement: {movement}")
                     if movement > 15000:  # Threshold for significant movement
-                        print(f"Player {person_id} moved during Red Light!")
+                        player_moved.add(person_id)  # Mark player as moved
+                        print(f"\033[91mPlayer {person_id} moved during Red Light!\033[0m")  # Print in red
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
