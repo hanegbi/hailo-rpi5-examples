@@ -1,13 +1,7 @@
 import gi
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib
-import os
-import numpy as np
-import cv2
-import hailo
+import multiprocessing
 import time
-import threading
-import argparse  # For parsing command-line arguments
+import argparse
 import sys
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
@@ -15,6 +9,10 @@ from hailo_apps_infra.hailo_rpi_common import (
     app_callback_class,
 )
 from hailo_apps_infra.pose_estimation_pipeline import GStreamerPoseEstimationApp
+from run_gui import run_gui  
+
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst
 
 # -----------------------------------------------------------------------------------------------
 # User-defined class to be used in the callback function
@@ -53,16 +51,17 @@ def set_level(level):
 # -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
-def game_loop():
+def game_loop(pipe):
     global game_state, moved_players, all_players
 
     while True:
         # Green Light phase (start a new game)
         game_state = "Green Light"
-        # print("\033[30;42mGreen Light! Players can move. Starting a new game soon.\033[0m")
+        print("\033[30;42mGreen Light! Players can move. Starting a new game soon.\033[0m")
+        pipe.send("Green Light")  # Send game state to the GUI
         moved_players.clear()  # Reset moved players for the new round
         all_players.clear()
-        # time.sleep(5)  # Duration for Green Light
+        time.sleep(5)  # Duration for Green Light
 
         # Red Light phase
         game_state = "Red Light"
@@ -72,9 +71,8 @@ def game_loop():
         time.sleep(1)
         print("\033[30;45m!!! 3 !!!\033[0m")
         time.sleep(1)
-        print("\033[30;45mSailted Fish\033[0m")
-        time.sleep(1)
         print("\033[30;45mDON'T MOVE!\033[0m")
+        pipe.send("Red Light")  # Send game state to the GUI
         time.sleep(20)  # Duration for Red Light
 
         # Determine winner during Red Light
@@ -90,109 +88,8 @@ def game_loop():
 
         print("\033[30;47mPausing for 10 seconds before the next round...\033[0m")
         time.sleep(5)
-        print("\033[30;47mGet ready! staring in 5 seconds...\033[0m")
+        print("\033[30;47mGet ready! starting in 5 seconds...\033[0m")
         time.sleep(5)
-
-# -----------------------------------------------------------------------------------------------
-# User-defined callback function
-# -----------------------------------------------------------------------------------------------
-def app_callback(pad, info, user_data):
-    global game_state, frame_history, moved_players, threshold, all_players
-
-    # Get the GstBuffer from the probe info
-    buffer = info.get_buffer()
-    if buffer is None:
-        return Gst.PadProbeReturn.OK
-
-    # Get video frame
-    format, width, height = get_caps_from_pad(pad)
-    frame = None
-    if user_data.use_frame and format and width and height:
-        frame = get_numpy_from_buffer(buffer, format, width, height)
-
-    # Get the detections from the buffer
-    roi = hailo.get_roi_from_buffer(buffer)
-    detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
-
-    # Keypoints for COCO body parts
-    keypoints = get_keypoints()
-
-    # Process detections
-    for detection in detections:
-        if detection.get_label() == "person":
-            track_id = 0
-            track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
-            if len(track) == 1:
-                track_id = track[0].get_id()
-
-            person_id = track_id  # Unique ID for each detection
-            all_players.add(person_id)  # Add to the set of all players
-
-            # Get bounding box and landmarks
-            bbox = detection.get_bbox()
-            landmarks = detection.get_objects_typed(hailo.HAILO_LANDMARKS)
-            if landmarks:
-                points = landmarks[0].get_points()
-                if person_id not in frame_history:
-                    frame_history[person_id] = []
-
-                # Extract keypoint coordinates
-                keypoint_coords = [
-                    (int((point.x() * bbox.width() + bbox.xmin()) * width),
-                     int((point.y() * bbox.height() + bbox.ymin()) * height))
-                    for point in points
-                ]
-
-                frame_history[person_id].append(keypoint_coords)
-
-                # Detect movement during "Red Light"
-                if game_state == "Red Light" and person_id not in moved_players:
-                    if len(frame_history[person_id]) > 1:
-                        prev_coords = frame_history[person_id][-2]
-                        curr_coords = frame_history[person_id][-1]
-
-                        # Calculate movement by summing the distance between keypoints
-                        movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
-                                       for prev, curr in zip(prev_coords, curr_coords))
-                        if movement > threshold:
-                            moved_players.add(person_id)
-                            print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
-
-    # Draw keypoints on the frame (optional visualisation)
-    if user_data.use_frame and frame is not None:
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        for person_id, keypoints in frame_history.items():
-            if keypoints:
-                for point in keypoints[-1]:  # Draw the most recent keypoints
-                    cv2.circle(frame, point, 5, (0, 255, 0), -1)
-        user_data.set_frame(frame)
-
-    return Gst.PadProbeReturn.OK
-
-# -----------------------------------------------------------------------------------------------
-# Keypoints Mapping
-# -----------------------------------------------------------------------------------------------
-def get_keypoints():
-    """Get the COCO keypoints and their left/right flip correspondence map."""
-    return {
-        'nose': 0,
-        'left_eye': 1,
-        'right_eye': 2,
-        'left_ear': 3,
-        'right_ear': 4,
-        'left_shoulder': 5,
-        'right_shoulder': 6,
-        'left_elbow': 7,
-        'right_elbow': 8,
-        'left_wrist': 9,
-        'right_wrist': 10,
-        'left_hip': 11,
-        'right_hip': 12,
-        'left_knee': 13,
-        'right_knee': 14,
-        'left_ankle': 15,
-        'right_ankle': 16,
-    }
 
 # -----------------------------------------------------------------------------------------------
 # Main Function
@@ -227,10 +124,23 @@ if __name__ == "__main__":
     # Create an instance of the user app callback class
     user_data = user_app_callback_class()
 
+    # Create a multiprocessing pipe for GUI communication
+    parent_pipe, child_pipe = multiprocessing.Pipe()
+
+    # Start the GUI in a separate process
+    gui_process = multiprocessing.Process(target=run_gui, args=(child_pipe,))
+    gui_process.start()
+
     # Start the game loop in a separate thread
-    game_thread = threading.Thread(target=game_loop, daemon=True)
+    game_thread = threading.Thread(target=game_loop, args=(parent_pipe,), daemon=True)
     game_thread.start()
 
-    # Run the GStreamer application
+    # Run the GStreamer application in the main thread
     app = GStreamerPoseEstimationApp(app_callback, user_data)
-    app.run()
+
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        print("Shutting down...")
+        parent_pipe.send("QUIT")
+        gui_process.join()
