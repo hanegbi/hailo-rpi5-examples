@@ -211,6 +211,12 @@ if __name__ == "__main__":
         default="easy",
         help="Set the game difficulty level (default: easy)",
     )
+    parser.add_argument(
+        "--camera",
+        type=str,
+        help="Camera device (e.g., /dev/video0)",
+        required=True,
+    )
     args = parser.parse_args()
 
     # Set the level based on the argument
@@ -230,5 +236,8 @@ if __name__ == "__main__":
     gui.connect("destroy", Gtk.main_quit)
     gui.show_all()
     Gst.init(None)
-    threading.Thread(target=lambda: GStreamerPoseEstimationApp(app_callback, user_data).run(), daemon=True).start()
+    threading.Thread(
+        target=lambda: GStreamerPoseEstimationApp(app_callback, user_data, camera=args.camera).run(),
+        daemon=True
+    ).start()
     Gtk.main()
