@@ -27,6 +27,7 @@ class user_app_callback_class(app_callback_class):
 # -----------------------------------------------------------------------------------------------
 game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
+moved_players = set()  # Set to store players who moved during "Red Light"
 
 # -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
@@ -101,7 +102,8 @@ def app_callback(pad, info, user_data):
                     # Calculate movement by summing the distance between keypoints
                     movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
                                    for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > 1500:  # Threshold for significant movement
+                    if movement > 1500 and person_id not in moved_players:
+                        moved_players.add(person_id)
                         print(f"Player {person_id} moved during Red Light!")
 
     # Draw keypoints on the frame (optional visualisation)
