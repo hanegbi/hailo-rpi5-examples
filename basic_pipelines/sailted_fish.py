@@ -1,75 +1,18 @@
-import gi
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib
-import os
-import numpy as np
-import cv2
-import hailo
-import time
-import threading
-import argparse  # For parsing command-line arguments
-import sys
-from hailo_apps_infra.hailo_rpi_common import (
-    get_caps_from_pad,
-    get_numpy_from_buffer,
-    app_callback_class,
-)
-from hailo_apps_infra.pose_estimation_pipeline import GStreamerPoseEstimationApp
-
-# -----------------------------------------------------------------------------------------------
-# User-defined class to be used in the callback function
-# -----------------------------------------------------------------------------------------------
-class user_app_callback_class(app_callback_class):
-    def __init__(self):
-        super().__init__()
-
-# -----------------------------------------------------------------------------------------------
 # Globals for Game Logic
-# -----------------------------------------------------------------------------------------------
 game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
 moved_players = set()  # Set to store players who moved during "Red Light"
-
-# -----------------------------------------------------------------------------------------------
-# Levels Definition
-# -----------------------------------------------------------------------------------------------
-level_thresholds = {
-    "easy": 1500,
-    "medium": 1000,
-    "hard": 500,
-}
-
-def set_level(level):
-    """Set the threshold based on the chosen level."""
-    global threshold
-    if level in level_thresholds:
-        threshold = level_thresholds[level]
-        print(f"Game level set to {level.capitalize()}. Movement threshold: {threshold}")
-    else:
-        print(f"Invalid level: {level}. Defaulting to 'easy'.")
-        threshold = level_thresholds["easy"]
-
-# -----------------------------------------------------------------------------------------------
-# Game Loop for Red Light, Green Light
-# -----------------------------------------------------------------------------------------------
-def game_loop():
-    global game_state
-    while True:
-        # Green Light phase
-        game_state = "Green Light"
-        print("Green Light! Players can move.")
-        time.sleep(10)  # Duration for Green Light
-
-        # Red Light phase
-        game_state = "Red Light"
-        print("Red Light! Players must stop.")
-        time.sleep(30)  # Duration for Red Light
+all_players = set()  # Set to store all detected players
+winner_declared = False  # Flag to indicate if a winner has been declared
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 def app_callback(pad, info, user_data):
-    global game_state, frame_history, moved_players, threshold
+    global game_state, frame_history, moved_players, threshold, all_players, winner_declared
+
+    if winner_declared:
+        return Gst.PadProbeReturn.OK  # Stop processing once a winner is declared
 
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
@@ -96,11 +39,14 @@ def app_callback(pad, info, user_data):
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
             if len(track) == 1:
                 track_id = track[0].get_id()
+
+            person_id = track_id  # Unique ID for each detection
+            all_players.add(person_id)  # Add to the set of all players
+
             # Get bounding box and landmarks
             bbox = detection.get_bbox()
             landmarks = detection.get_objects_typed(hailo.HAILO_LANDMARKS)
             if landmarks:
-                person_id = track_id  # Unique ID for each detection
                 points = landmarks[0].get_points()
                 if person_id not in frame_history:
                     frame_history[person_id] = []
@@ -122,7 +68,7 @@ def app_callback(pad, info, user_data):
                     # Calculate movement by summing the distance between keypoints
                     movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
                                    for prev, curr in zip(prev_coords, curr_coords))
-                    if movement > threshold and person_id not in moved_players:
+                    if movement > threshold:
                         moved_players.add(person_id)
                         print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
 
@@ -138,29 +84,40 @@ def app_callback(pad, info, user_data):
     return Gst.PadProbeReturn.OK
 
 # -----------------------------------------------------------------------------------------------
-# Keypoints Mapping
+# Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
-def get_keypoints():
-    """Get the COCO keypoints and their left/right flip correspondence map."""
-    return {
-        'nose': 0,
-        'left_eye': 1,
-        'right_eye': 2,
-        'left_ear': 3,
-        'right_ear': 4,
-        'left_shoulder': 5,
-        'right_shoulder': 6,
-        'left_elbow': 7,
-        'right_elbow': 8,
-        'left_wrist': 9,
-        'right_wrist': 10,
-        'left_hip': 11,
-        'right_hip': 12,
-        'left_knee': 13,
-        'right_knee': 14,
-        'left_ankle': 15,
-        'right_ankle': 16,
-    }
+def game_loop():
+    global game_state, moved_players, all_players, winner_declared
+
+    while not winner_declared:
+        # Green Light phase
+        game_state = "Green Light"
+        print("Green Light! Players can move.")
+        time.sleep(10)  # Duration for Green Light
+
+        # Red Light phase
+        game_state = "Red Light"
+        print("Red Light! Players must stop.")
+        time.sleep(30)  # Duration for Red Light
+
+        # Check for a winner at the end of "Red Light"
+        if len(all_players) > 1:
+            non_moved_players = all_players - moved_players
+            if len(non_moved_players) == 1:
+                winner = non_moved_players.pop()  # Identify the single winner
+                print(f"\033[42mPlayer {winner} is the winner!\033[0m")  # Green background
+                winner_declared = True
+                break
+            elif len(non_moved_players) > 1:
+                print("Multiple players didn't move. Continuing...")
+            else:
+                print("No winner. All players moved during Red Light!")
+
+        # Reset for the next round
+        moved_players.clear()
+        all_players.clear()
+
+    print("Game over. A winner has been declared.")
 
 # -----------------------------------------------------------------------------------------------
 # Main Function
@@ -185,9 +142,6 @@ if __name__ == "__main__":
 
     # Set the level based on the argument
     set_level(args.level)
-    if "--level" in sys.argv:
-        index = sys.argv.index("--level")
-        del sys.argv[index:index + 2]  # Remove both --level and its value
 
     # Print the input source
     print(f"Input source: {args.input}")
