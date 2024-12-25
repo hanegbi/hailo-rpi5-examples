@@ -175,10 +175,19 @@ if __name__ == "__main__":
         default="easy",
         help="Set the game difficulty level (default: easy)",
     )
+    parser.add_argument(
+        "--input",
+        type=str,
+        required=True,
+        help="Specify the input source (e.g., rpi or a video file path)",
+    )
     args = parser.parse_args()
 
     # Set the level based on the argument
     set_level(args.level)
+
+    # Print the input source
+    print(f"Input source: {args.input}")
 
     # Create an instance of the user app callback class
     user_data = user_app_callback_class()
