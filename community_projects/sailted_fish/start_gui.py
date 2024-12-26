@@ -2,6 +2,8 @@ import gi
 import subprocess
 import os
 import signal
+import pygame
+
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
@@ -59,6 +61,13 @@ class MainGUI(Gtk.Window):
         self.start_button = Gtk.Button(label="Start")
         self.start_button.connect("clicked", self.on_start_button_clicked)
         self.box.pack_start(self.start_button, False, False, 10)
+     
+        pygame.mixer.init() 
+
+        pygame.mixer.music.load("/home/hailo/workspace/hailo-rpi5-examples/community_projects/sailted_fish/music_for_idle_mode.mp3") 
+        
+        pygame.mixer.music.play(-1)
+
 
         # Add the Stop button
         self.stop_button = Gtk.Button(label="Stop")
@@ -74,6 +83,7 @@ class MainGUI(Gtk.Window):
     def on_start_button_clicked(self, widget):
         """Callback for the Start button."""
         try:
+            pygame.mixer.music.stop()
             script_path = os.path.join(os.path.dirname(__file__), "sailted_fish.py")
             subprocess.Popen(["python3", script_path, "--input", "rpi"])
             self.status_label.set_text("Status: Game started!")
