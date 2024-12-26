@@ -96,10 +96,12 @@ def game_loop():
                 print(f"\033[100mPlayer {winner} is the winner!\033[0m")
                 tts_engine.say(f"Player {winner} is the winner")
                 tts_engine.runAndWait()
+                tts_engine.stop()
             elif len(non_moved_players) > 1:
                 print("\033[30;47mMultiple players didn't move. No winner this round.\033[0m")
                 tts_engine.say(f"No winner this round")
                 tts_engine.runAndWait()
+                tts_engine.stop()
             else:
                 print("\033[30;47mNo winner. All players moved during Red Light!\033[0m")
 
@@ -174,6 +176,7 @@ def app_callback(pad, info, user_data):
                             print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
                             tts_engine.say(f"Player {person_id} moved during red light!")
                             tts_engine.runAndWait()
+                            tts_engine.stop()
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
