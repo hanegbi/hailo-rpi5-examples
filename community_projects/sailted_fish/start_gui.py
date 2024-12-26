@@ -108,14 +108,22 @@ class MainGUI(Gtk.Window):
             return
 
         try:
+            # Terminate the subprocess if running
             self.current_process.terminate()
             self.current_process.wait()
             self.current_process = None
             self.current_level = None
-            self.status_label.set_text("Game stopped!")
+
+            # Stop any playing music and restart idle music
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.stop()
             pygame.mixer.music.play(-1)
+
+            # Update status
+            self.status_label.set_text("Game stopped!")
         except Exception as e:
-            self.status_label.set_text(f"Error: {e}")
+            self.status_label.set_text(f"Error stopping the game: {e}")
+
 
 if __name__ == "__main__":
     win = MainGUI()
