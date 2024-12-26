@@ -76,9 +76,9 @@ class MainGUI(Gtk.Window):
         pygame.mixer.music.play(-1)
 
         # Add the Stop button
-        self.stop_button = Gtk.Button(label="Stop")
-        self.stop_button.connect("clicked", self.on_stop_button_clicked)
-        self.box.pack_start(self.stop_button, False, False, 10)
+        # self.stop_button = Gtk.Button(label="Stop")
+        # self.stop_button.connect("clicked", self.on_stop_button_clicked)
+        # self.box.pack_start(self.stop_button, False, False, 10)
 
         # Add a status display area
         self.status_label = Gtk.Label(label="Choose a level to start the game!")
