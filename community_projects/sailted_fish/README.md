@@ -1,8 +1,10 @@
 # Sailted Fish
 
+![Sailted Fish Logo](https://i.ibb.co/tp3vCYK/image.png){width=78 height=50}
+
 ## Overview
 
-Sailted Fish 🐟 is a Red Light 🔴 Green Light 🟢 game that that uses advanced AI-driven pose estimation to track player movements. If a player moves during "Red Light," they are flagged as "Salted Fish" 🐟 and eliminated from the round. The last player who stays still through "Red Light" is the winner 🏆.
+Sailted Fish 🐟 is a Red Light 🔴 Green Light 🟢 game that uses advanced AI-driven pose estimation to track player movements. If a player moves during "Red Light," they are flagged as "Salted Fish" 🐟 and eliminated from the round. The last player who stays still through "Red Light" is the winner 🏆.
 
 ## Video
 
@@ -23,31 +25,45 @@ Sailted Fish 🐟 is a Red Light 🔴 Green Light 🟢 game that that uses adv
 
 📦 To set up Sailted Fish, follow these steps:
 
-1. Install the required dependencies:
+Install the required dependencies:
+
+1.
    ```bash
    pip install -r requirements.txt
    ```
-
-2. Run the program:
+2.
    ```bash
-   python sailted_fish.py --input rpi --level easy
+   sudo apt-get install espeak espeak-ng
    ```
+
+![GUI Screenshot](https://i.ibb.co/qRGj2Wt/saited-fish-gui.jpg){width=242 height=200}
+
+## Features
+
+📚 **Simple Features:**
+
+- 🕹️ **GUI:** Easy-to-use interface for start, stop, and choose gameplay levels.
+- 🎵 **Music & Sounds:** Enjoy background music and sound effects during gameplay.
+- 🧐 **AI Pose Estimation:** Tracks player movements accurately with Hailo App.
 
 ## Usage
 
-🚀 You can customise the gameplay difficulty levels:
+Open the GUI:
+
+```bash
+python start_gui.py
+```
+
+🚀 You can customize the gameplay difficulty levels:
+
 - `easy`
 - `medium`
 - `hard`
 
-### Example Commands:
-
-Run the game with a video file and medium difficulty:
-```bash
-python sailted_fish.py --input rpi --level medium
-```
-
+Stop the game by clicking the "Stop" button.\
+You can change the level after you stop the game.
 
 ## License
 
 📜 Sailted Fish is licensed under the MIT License. See the LICENSE file for full details.
+
