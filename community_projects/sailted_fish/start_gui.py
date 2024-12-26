@@ -1,6 +1,7 @@
 import gi
 import subprocess
 import os
+import signal
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
@@ -50,18 +51,19 @@ class MainGUI(Gtk.Window):
         self.add(self.box)
 
         # Add a header label
-        self.label = Gtk.Label(label="Sailted Fish Controller <*)))><")
+        self.label = Gtk.Label(label="Sailted Fish Controller <*
         self.label.set_xalign(0.5)
         self.box.pack_start(self.label, False, False, 20)
 
-        # Add level selection buttons
-        self.level_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.box.pack_start(self.level_buttons, False, False, 10)
+        # Add the Start button
+        self.start_button = Gtk.Button(label="Start")
+        self.start_button.connect("clicked", self.on_start_button_clicked)
+        self.box.pack_start(self.start_button, False, False, 10)
 
-        for level in ["easy", "medium", "hard"]:
-            button = Gtk.Button(label=level.capitalize())
-            button.connect("clicked", self.on_level_button_clicked, level)
-            self.level_buttons.pack_start(button, True, True, 10)
+        # Add the Stop button
+        self.stop_button = Gtk.Button(label="Stop")
+        self.stop_button.connect("clicked", self.on_stop_button_clicked)
+        self.box.pack_start(self.stop_button, False, False, 10)
 
         # Add a status display area
         self.status_label = Gtk.Label(label="Status: Ready")
@@ -69,14 +71,25 @@ class MainGUI(Gtk.Window):
         self.status_label.get_style_context().add_class("status")
         self.box.pack_start(self.status_label, False, False, 20)
 
-    def on_level_button_clicked(self, widget, level):
-        """Callback for level selection buttons."""
+    def on_start_button_clicked(self, widget):
+        """Callback for the Start button."""
         try:
             script_path = os.path.join(os.path.dirname(__file__), "sailted_fish.py")
-            # Launch the game script without closing the GUI
-            subprocess.Popen(["python3", script_path, "--level", level, "--input", "rpi"], 
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.status_label.set_text(f"Status: Game started with {level.capitalize()} level!")
+            subprocess.Popen(["python3", script_path, "--input", "rpi"])
+            self.status_label.set_text("Status: Game started!")
+        except Exception as e:
+            self.status_label.set_text(f"Status: Error: {e}")
+
+    def on_stop_button_clicked(self, widget):
+        """Callback for the Stop button."""
+        try:
+            result = subprocess.run(["pgrep", "-f", "Hailo Pose"], stdout=subprocess.PIPE, text=True)
+            if result.stdout:
+                for pid in result.stdout.split():
+                    os.kill(int(pid), signal.SIGTERM)
+                self.status_label.set_text("Status: Game stopped!")
+            else:
+                self.status_label.set_text("Status: No running game process found.")
         except Exception as e:
             self.status_label.set_text(f"Status: Error: {e}")
 
