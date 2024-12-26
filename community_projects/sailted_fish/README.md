@@ -1,6 +1,7 @@
 # Sailted Fish
 
-![Sailted Fish Logo](https://i.ibb.co/tp3vCYK/image.png){width=78 height=50}
+<img src="https://i.ibb.co/tp3vCYK/image.png" alt="Sailted Fish Logo" width="78" height="50">
+
 
 ## Overview
 
@@ -36,7 +37,7 @@ Install the required dependencies:
    sudo apt-get install espeak espeak-ng
    ```
 
-![GUI Screenshot](https://i.ibb.co/qRGj2Wt/saited-fish-gui.jpg){width=242 height=200}
+<img src="https://i.ibb.co/qRGj2Wt/saited-fish-gui.jpg" alt="gui" width="242" height="200">
 
 ## Features
 
