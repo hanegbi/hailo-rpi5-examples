@@ -5,7 +5,7 @@
 
 ## Overview
 
-Sailted Fish 🐟 is a Red Light 🔴 Green Light 🟢 game that uses advanced AI-driven pose estimation to track player movements. If a player moves during "Red Light," they are flagged as "Salted Fish" 🐟 and eliminated from the round. The last player who stays still through "Red Light" is the winner 🏆.
+Sailted Fish 🐟 is a Red Light 🔴 Green Light 🟢 game that uses advanced AI-driven pose estimation to track player movements with yolov_pose. If a player moves during "Red Light," they are flagged as "Salted Fish" 🐟 and eliminated from the round. The last player who stays still through "Red Light" is the winner 🏆.
 
 ## Video
 
