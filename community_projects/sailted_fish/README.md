@@ -1,4 +1,4 @@
-# Hailo Games aka Sailted Fish
+# Hailo Games | Sailted Fish
 
 <img src="https://i.ibb.co/tp3vCYK/image.png" alt="Sailted Fish Logo" width="156" height="100">
 
