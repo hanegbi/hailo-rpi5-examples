@@ -51,7 +51,7 @@ class MainGUI(Gtk.Window):
         self.add(self.box)
 
         # Add a header label
-        self.label = Gtk.Label(label="Sailted Fish Controller <*
+        self.label = Gtk.Label(label="Sailted Fish Controller <*)))><")
         self.label.set_xalign(0.5)
         self.box.pack_start(self.label, False, False, 20)
 
