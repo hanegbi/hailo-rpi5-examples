@@ -11,6 +11,9 @@ import time
 import threading
 import argparse  # For parsing command-line arguments
 import sys
+import pygame
+import pyttsx3
+
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
@@ -70,9 +73,16 @@ def set_level(level):
 def game_loop():
     global game_state, moved_players, all_players
 
+    pygame.mixer.init() 
+
+    pygame.mixer.music.load("/home/hailo/workspace/hailo-rpi5-examples/community_projects/sailted_fish/music_for_green_light.mp3") 
+
+
     while True:
         # Green Light phase (start a new game)
         game_state = "Green Light"
+
+        pygame.mixer.music.play(-1)
         moved_players.clear()  # Reset moved players for the new round
         all_players.clear()
 
@@ -98,6 +108,8 @@ def game_loop():
         tts_engine.runAndWait()
         tts_engine.stop()
         game_state = "Red Light"
+        pygame.mixer.music.stop()
+
         time.sleep(20)  # Duration for Red Light
 
         # Determine winner during Red Light
@@ -121,7 +133,7 @@ def game_loop():
         time.sleep(5)
         print("\033[30;47mGet ready! staring in 5 seconds...\033[0m")
         time.sleep(5)
-
+    pygame.mixer.quit()
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
