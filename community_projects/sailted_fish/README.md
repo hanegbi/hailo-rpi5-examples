@@ -9,9 +9,9 @@ Sailted Fish 🐟 is a Red Light 🔴 Green Light 🟢 game that uses advanced A
 
 ## Video
 
-🎥 Watch the demo:
 
-[Insert Demo URL Here]
+   <p>🎥 Watch the demo: <a href="https://youtube.com/shorts/TxlH3vfFT-g?si=21905bCQhv52vQm4">Watch on YouTube</a></p>
+
 
 ## Versions
 
