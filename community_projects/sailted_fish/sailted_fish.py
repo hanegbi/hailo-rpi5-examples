@@ -174,7 +174,7 @@ def app_callback(pad, info, user_data):
                         if movement > threshold:
                             moved_players.add(person_id)
                             print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
-                            tts_engine.say(f"Player {person_id} moved during red light!")
+                            tts_engine.say(f"Player {person_id} you moved you are salted fish")
                             tts_engine.runAndWait()
                             tts_engine.stop()
 
