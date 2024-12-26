@@ -1,4 +1,6 @@
 import gi
+import pyttsx3
+
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
 import os
@@ -7,19 +9,14 @@ import cv2
 import hailo
 import time
 import threading
-import argparse
+import argparse  # For parsing command-line arguments
 import sys
-import pyttsx3  # Fast text-to-speech library
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
     app_callback_class,
 )
 from hailo_apps_infra.pose_estimation_pipeline import GStreamerPoseEstimationApp
-
-# Initialize pyttsx3 for text-to-speech
-tts_engine = pyttsx3.init()
-tts_engine.setProperty('rate', 150)  # Adjust the speech rate
 
 # -----------------------------------------------------------------------------------------------
 # User-defined class to be used in the callback function
@@ -35,6 +32,18 @@ game_state = "Green Light"  # Initial state of the game
 frame_history = {}  # Dictionary to store pose keypoints for movement detection
 moved_players = set()  # Set to store players who moved during "Red Light"
 all_players = set()  # Set to store all detected players
+
+# Initialize text-to-speech engine
+tts_engine = pyttsx3.init()
+voices = tts_engine.getProperty('voices')
+
+# Select "Microsoft David Desktop" voice
+for voice in voices:
+    if "David" in voice.name:
+        tts_engine.setProperty('voice', voice.id)
+        break
+tts_engine.setProperty('rate', 150)  # Reduce speed for clarity
+tts_engine.setProperty('volume', 0.9)  # Set volume level
 
 # -----------------------------------------------------------------------------------------------
 # Levels Definition
@@ -56,17 +65,6 @@ def set_level(level):
         threshold = level_thresholds["easy"]
 
 # -----------------------------------------------------------------------------------------------
-# Text-to-Speech Function
-# -----------------------------------------------------------------------------------------------
-def speak_text(text):
-    """Speak the given text using pyttsx3."""
-    try:
-        tts_engine.say(text)
-        tts_engine.runAndWait()
-    except Exception as e:
-        print(f"Error in TTS: {e}")
-
-# -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
 def game_loop():
@@ -85,6 +83,7 @@ def game_loop():
         time.sleep(1)
         print("\033[30;45m!!! 3 !!!\033[0m")
         time.sleep(1)
+        print("\033[30;45mSailted Fish\033[0m")
         print("\033[30;45mSTOPPPPPPP\033[0m")
         game_state = "Red Light"
         time.sleep(20)  # Duration for Red Light
@@ -95,14 +94,18 @@ def game_loop():
             if len(non_moved_players) == 1:
                 winner = non_moved_players.pop()
                 print(f"\033[100mPlayer {winner} is the winner!\033[0m")
+                tts_engine.say(f"Player {winner} is the winner")
+                tts_engine.runAndWait()
             elif len(non_moved_players) > 1:
                 print("\033[30;47mMultiple players didn't move. No winner this round.\033[0m")
+                tts_engine.say(f"No winner this round")
+                tts_engine.runAndWait()
             else:
                 print("\033[30;47mNo winner. All players moved during Red Light!\033[0m")
 
         print("\033[30;47mPausing for 10 seconds before the next round...\033[0m")
         time.sleep(5)
-        print("\033[30;47mGet ready! Starting in 5 seconds...\033[0m")
+        print("\033[30;47mGet ready! staring in 5 seconds...\033[0m")
         time.sleep(5)
 
 # -----------------------------------------------------------------------------------------------
@@ -169,7 +172,8 @@ def app_callback(pad, info, user_data):
                         if movement > threshold:
                             moved_players.add(person_id)
                             print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
-                            speak_text(f"Player {person_id} moved during Red Light!")  # TTS Alert
+                            tts_engine.say(f"Player {person_id} moved during red light!")
+                            tts_engine.runAndWait()
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
