@@ -40,6 +40,7 @@ Install the required dependencies:
 
 ## Features
 
+- ✋ Touch Screen: Intuitive controls with touch screen integration for an enhanced experience.
 - 🕹️ **GUI:** Easy-to-use interface for start, stop, and choose gameplay levels.
 - 🎵 **Music & Sounds:** Enjoy background music and sound effects during gameplay.
 - 🧐 **AI Pose Estimation:** Tracks player movements accurately with Hailo App.
