@@ -89,25 +89,25 @@ def game_loop():
 
             # Red Light phase
             print("\033[30;45m!!! 1 !!!\033[0m")
-            tts_engine.say(f"One")
-            tts_engine.runAndWait()
-            tts_engine.stop()
+            # tts_engine.say(f"One")
+            # tts_engine.runAndWait()
+            # tts_engine.stop()
             time.sleep(5)
             print("\033[30;45m!!! 2 !!!\033[0m")
-            tts_engine.say(f"Two")
-            tts_engine.runAndWait()
-            tts_engine.stop()
+            # tts_engine.say(f"Two")
+            # tts_engine.runAndWait()
+            # tts_engine.stop()
             time.sleep(5)
             print("\033[30;45m!!! 3 !!!\033[0m")
-            tts_engine.say(f"Three")
-            tts_engine.runAndWait()
-            tts_engine.stop()
+            # tts_engine.say(f"Three")
+            # tts_engine.runAndWait()
+            # tts_engine.stop()
             time.sleep(5)
             print("\033[30;45mSailted Fish\033[0m")
             print("\033[30;45mSTOPPPPPPP\033[0m")
-            tts_engine.say(f"Stop")
-            tts_engine.runAndWait()
-            tts_engine.stop()
+            # tts_engine.say(f"Stop")
+            # tts_engine.runAndWait()
+            # tts_engine.stop()
             game_state = "Red Light"
             pygame.mixer.music.stop()
 
@@ -119,14 +119,14 @@ def game_loop():
                 if len(non_moved_players) == 1:
                     winner = non_moved_players.pop()
                     print(f"\033[100mPlayer {winner} is the winner!\033[0m")
-                    tts_engine.say(f"Player {winner} won")
-                    tts_engine.runAndWait()
-                    tts_engine.stop()
+                    # tts_engine.say(f"Player {winner} won")
+                    # tts_engine.runAndWait()
+                    # tts_engine.stop()
                 elif len(non_moved_players) > 1:
                     print("\033[30;47mMultiple players didn't move. No winner this round.\033[0m")
-                    tts_engine.say(f"No winner")
-                    tts_engine.runAndWait()
-                    tts_engine.stop()
+                    # tts_engine.say(f"No winner")
+                    # tts_engine.runAndWait()
+                    # tts_engine.stop()
                 else:
                     print("\033[30;47mNo winner. All players moved during Red Light!\033[0m")
 
@@ -201,9 +201,9 @@ def app_callback(pad, info, user_data):
                         if movement > threshold:
                             moved_players.add(person_id)
                             print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
-                            tts_engine.say(f"Player {person_id} moved you salted fish")
-                            tts_engine.runAndWait()
-                            tts_engine.stop()
+                            # tts_engine.say(f"Player {person_id} moved you salted fish")
+                            # tts_engine.runAndWait()
+                            # tts_engine.stop()
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
