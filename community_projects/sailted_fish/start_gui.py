@@ -2,6 +2,8 @@ import gi
 import subprocess
 import os
 import signal
+import pygame
+
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
@@ -67,6 +69,11 @@ class MainGUI(Gtk.Window):
             button.connect("clicked", self.on_level_button_clicked, level)
             self.level_buttons.pack_start(button, True, True, 10)
 
+        #pygame.mixer.init() 
+
+        #pygame.mixer.music.load("/home/hailo/workspace/hailo-rpi5-examples/community_projects/sailted_fish/music_for_idle_mode.mp3") 
+        
+        #pygame.mixer.music.play(-1)
         # Add the Stop button
         self.stop_button = Gtk.Button(label="Stop")
         self.stop_button.connect("clicked", self.on_stop_button_clicked)
@@ -84,6 +91,7 @@ class MainGUI(Gtk.Window):
             self.status_label.set_text("Status: Stop the current game to change level.")
         else:
             try:
+                #pygame.mixer.music.stop()
                 script_path = os.path.join(os.path.dirname(__file__), "sailted_fish.py")
                 subprocess.Popen(["python3", script_path, "--level", level, "--input", "rpi"])
                 self.status_label.set_text(f"Status: Game started with {level.capitalize()} level!")
