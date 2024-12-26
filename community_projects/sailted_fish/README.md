@@ -37,7 +37,6 @@ Install the required dependencies:
    sudo apt-get install espeak espeak-ng
    ```
 
-<img src="https://i.ibb.co/qRGj2Wt/saited-fish-gui.jpg" alt="gui" width="484" height="400">
 
 ## Features
 
@@ -54,6 +53,7 @@ Open the GUI:
 ```bash
 python start_gui.py
 ```
+<img src="https://i.ibb.co/qRGj2Wt/saited-fish-gui.jpg" alt="gui" width="484" height="400">
 
 🚀 You can customize the gameplay difficulty levels:
 
