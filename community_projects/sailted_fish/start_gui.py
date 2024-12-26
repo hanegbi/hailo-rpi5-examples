@@ -51,17 +51,17 @@ class MainGUI(Gtk.Window):
         self.add(self.box)
 
         # Add a header label
-        self.label = Gtk.Label(label="Sailted Fish Controller <*͜𒅋 ")
+        self.label = Gtk.Label(label="Sailted Fish Controller <*)))><")
         self.label.set_xalign(0.5)
         self.box.pack_start(self.label, False, False, 20)
 
         # Add the Start button
-        self.start_button = Gtk.Button(label="\u25B6 Start")
+        self.start_button = Gtk.Button(label="Start")
         self.start_button.connect("clicked", self.on_start_button_clicked)
         self.box.pack_start(self.start_button, False, False, 10)
 
         # Add the Stop button
-        self.stop_button = Gtk.Button(label="⏹︎ Stop")
+        self.stop_button = Gtk.Button(label="Stop")
         self.stop_button.connect("clicked", self.on_stop_button_clicked)
         self.box.pack_start(self.stop_button, False, False, 10)
 
