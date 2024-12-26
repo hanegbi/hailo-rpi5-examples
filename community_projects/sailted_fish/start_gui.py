@@ -108,16 +108,17 @@ class MainGUI(Gtk.Window):
             return
 
         try:
+            # Stop and quit pygame music
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.stop()
+            pygame.mixer.quit()
+            
             # Terminate the subprocess if running
             self.current_process.terminate()
             self.current_process.wait()
             self.current_process = None
             self.current_level = None
 
-            # Stop and quit pygame music
-            if pygame.mixer.music.get_busy():
-                pygame.mixer.music.stop()
-            pygame.mixer.quit()
 
             # Update status
             self.status_label.set_text("Game stopped!")
