@@ -7,16 +7,20 @@ import cv2
 import hailo
 import time
 import threading
-import argparse  # For parsing command-line arguments
+import argparse
 import sys
+from gtts import gTTS
+import io
 import pygame
-
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
     app_callback_class,
 )
 from hailo_apps_infra.pose_estimation_pipeline import GStreamerPoseEstimationApp
+
+# Initialize Pygame for audio playback
+pygame.mixer.init()
 
 # -----------------------------------------------------------------------------------------------
 # User-defined class to be used in the callback function
@@ -53,26 +57,33 @@ def set_level(level):
         threshold = level_thresholds["easy"]
 
 # -----------------------------------------------------------------------------------------------
+# Text-to-Speech Function
+# -----------------------------------------------------------------------------------------------
+def speak_text(text):
+    """Speak the given text using gTTS and Pygame."""
+    try:
+        tts = gTTS(text=text, lang='en')
+        audio_data = io.BytesIO()
+        tts.write_to_fp(audio_data)
+        audio_data.seek(0)
+        pygame.mixer.music.load(audio_data, 'mp3')
+        pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():
+            pass
+    except Exception as e:
+        print(f"Error in TTS: {e}")
+
+# -----------------------------------------------------------------------------------------------
 # Game Loop for Red Light, Green Light
 # -----------------------------------------------------------------------------------------------
 def game_loop():
     global game_state, moved_players, all_players
 
-
-    pygame.mixer.init() 
-
-    pygame.mixer.music.load("/home/hailo/workspace/hailo-rpi5-examples/community_projects/sailted_fish/music_for_green_light.mp3") 
-
-
-
     while True:
         # Green Light phase (start a new game)
         game_state = "Green Light"
-        pygame.mixer.music.play(-1)
-        # print("\033[30;42mGreen Light! Players can move. Starting a new game soon.\033[0m")
         moved_players.clear()  # Reset moved players for the new round
         all_players.clear()
-        # time.sleep(5)  # Duration for Green Light
 
         # Red Light phase
         print("\033[30;45m!!! 1 !!!\033[0m")
@@ -81,10 +92,8 @@ def game_loop():
         time.sleep(1)
         print("\033[30;45m!!! 3 !!!\033[0m")
         time.sleep(1)
-        print("\033[30;45mSailted Fish\033[0m")
         print("\033[30;45mSTOPPPPPPP\033[0m")
         game_state = "Red Light"
-        pygame.mixer.music.stop()
         time.sleep(20)  # Duration for Red Light
 
         # Determine winner during Red Light
@@ -100,9 +109,9 @@ def game_loop():
 
         print("\033[30;47mPausing for 10 seconds before the next round...\033[0m")
         time.sleep(5)
-        print("\033[30;47mGet ready! staring in 5 seconds...\033[0m")
+        print("\033[30;47mGet ready! Starting in 5 seconds...\033[0m")
         time.sleep(5)
-    pygame.mixer.quit()
+
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
@@ -167,6 +176,7 @@ def app_callback(pad, info, user_data):
                         if movement > threshold:
                             moved_players.add(person_id)
                             print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
+                            speak_text(f"Player {person_id} moved, you're out!!")  # TTS Alert
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
