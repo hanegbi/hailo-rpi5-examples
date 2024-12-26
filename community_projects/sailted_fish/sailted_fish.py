@@ -78,13 +78,25 @@ def game_loop():
 
         # Red Light phase
         print("\033[30;45m!!! 1 !!!\033[0m")
+        tts_engine.say(f"1")
+        tts_engine.runAndWait()
+        tts_engine.stop()
         time.sleep(1)
         print("\033[30;45m!!! 2 !!!\033[0m")
+        tts_engine.say(f"2")
+        tts_engine.runAndWait()
+        tts_engine.stop()
         time.sleep(1)
         print("\033[30;45m!!! 3 !!!\033[0m")
+        tts_engine.say(f"3")
+        tts_engine.runAndWait()
+        tts_engine.stop()
         time.sleep(1)
         print("\033[30;45mSailted Fish\033[0m")
         print("\033[30;45mSTOPPPPPPP\033[0m")
+        tts_engine.say(f"Stop")
+        tts_engine.runAndWait()
+        tts_engine.stop()
         game_state = "Red Light"
         time.sleep(20)  # Duration for Red Light
 
@@ -94,12 +106,12 @@ def game_loop():
             if len(non_moved_players) == 1:
                 winner = non_moved_players.pop()
                 print(f"\033[100mPlayer {winner} is the winner!\033[0m")
-                tts_engine.say(f"Player {winner} is the winner")
+                tts_engine.say(f"Player {winner} won")
                 tts_engine.runAndWait()
                 tts_engine.stop()
             elif len(non_moved_players) > 1:
                 print("\033[30;47mMultiple players didn't move. No winner this round.\033[0m")
-                tts_engine.say(f"No winner this round")
+                tts_engine.say(f"No winner")
                 tts_engine.runAndWait()
                 tts_engine.stop()
             else:
