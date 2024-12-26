@@ -9,9 +9,7 @@ import time
 import threading
 import argparse
 import sys
-from gtts import gTTS
-import io
-import pygame
+import pyttsx3  # Fast text-to-speech library
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
@@ -19,8 +17,9 @@ from hailo_apps_infra.hailo_rpi_common import (
 )
 from hailo_apps_infra.pose_estimation_pipeline import GStreamerPoseEstimationApp
 
-# Initialize Pygame for audio playback
-pygame.mixer.init()
+# Initialize pyttsx3 for text-to-speech
+tts_engine = pyttsx3.init()
+tts_engine.setProperty('rate', 150)  # Adjust the speech rate
 
 # -----------------------------------------------------------------------------------------------
 # User-defined class to be used in the callback function
@@ -60,16 +59,10 @@ def set_level(level):
 # Text-to-Speech Function
 # -----------------------------------------------------------------------------------------------
 def speak_text(text):
-    """Speak the given text using gTTS and Pygame."""
+    """Speak the given text using pyttsx3."""
     try:
-        tts = gTTS(text=text, lang='en')
-        audio_data = io.BytesIO()
-        tts.write_to_fp(audio_data)
-        audio_data.seek(0)
-        pygame.mixer.music.load(audio_data, 'mp3')
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            pass
+        tts_engine.say(text)
+        tts_engine.runAndWait()
     except Exception as e:
         print(f"Error in TTS: {e}")
 
@@ -176,7 +169,7 @@ def app_callback(pad, info, user_data):
                         if movement > threshold:
                             moved_players.add(person_id)
                             print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
-                            speak_text(f"Player {person_id} moved, you're out!!")  # TTS Alert
+                            speak_text(f"Player {person_id} moved during Red Light!")  # TTS Alert
 
     # Draw keypoints on the frame (optional visualisation)
     if user_data.use_frame and frame is not None:
