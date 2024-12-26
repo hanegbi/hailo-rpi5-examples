@@ -91,17 +91,17 @@ def game_loop():
         tts_engine.say(f"One")
         tts_engine.runAndWait()
         tts_engine.stop()
-        time.sleep(1)
+        time.sleep(5)
         print("\033[30;45m!!! 2 !!!\033[0m")
         tts_engine.say(f"Two")
         tts_engine.runAndWait()
         tts_engine.stop()
-        time.sleep(1)
+        time.sleep(5)
         print("\033[30;45m!!! 3 !!!\033[0m")
         tts_engine.say(f"Three")
         tts_engine.runAndWait()
         tts_engine.stop()
-        time.sleep(1)
+        time.sleep(5)
         print("\033[30;45mSailted Fish\033[0m")
         print("\033[30;45mSTOPPPPPPP\033[0m")
         tts_engine.say(f"Stop")
@@ -110,7 +110,7 @@ def game_loop():
         game_state = "Red Light"
         pygame.mixer.music.stop()
 
-        time.sleep(20)  # Duration for Red Light
+        time.sleep(10)  # Duration for Red Light
 
         # Determine winner during Red Light
         if len(all_players) > 1:
