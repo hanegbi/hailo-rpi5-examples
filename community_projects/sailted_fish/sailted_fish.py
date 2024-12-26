@@ -1,104 +1,256 @@
 import gi
-import subprocess
+import pyttsx3
+
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst, GLib
 import os
-import signal
+import numpy as np
+import cv2
+import hailo
+import time
+import threading
+import argparse  # For parsing command-line arguments
+import sys
+from hailo_apps_infra.hailo_rpi_common import (
+    get_caps_from_pad,
+    get_numpy_from_buffer,
+    app_callback_class,
+)
+from hailo_apps_infra.pose_estimation_pipeline import GStreamerPoseEstimationApp
 
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
-
-class MainGUI(Gtk.Window):
+# -----------------------------------------------------------------------------------------------
+# User-defined class to be used in the callback function
+# -----------------------------------------------------------------------------------------------
+class user_app_callback_class(app_callback_class):
     def __init__(self):
-        super().__init__(title="Sailted Fish Controller")
-        self.set_default_size(600, 450)
+        super().__init__()
 
-        # Apply custom CSS for styling
-        provider = Gtk.CssProvider()
-        provider.load_from_data(b"""
-            window {
-                background-color: #1e1e2f;
-            }
-            label {
-                font-size: 26px;
-                font-weight: bold;
-                color: #e0e0e0;
-            }
-            button {
-                font-size: 18px;
-                padding: 15px;
-                color: #ffffff;
-                background-color: #007acc;
-                border-radius: 10px;
-                border: none;
-                transition: background-color 0.3s;
-            }
-            button:hover {
-                background-color: #005bb5;
-            }
-            .status {
-                font-size: 20px;
-                color: #d1d1d1;
-                margin-top: 15px;
-            }
-        """)
-        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+# -----------------------------------------------------------------------------------------------
+# Globals for Game Logic
+# -----------------------------------------------------------------------------------------------
+game_state = "Green Light"  # Initial state of the game
+frame_history = {}  # Dictionary to store pose keypoints for movement detection
+moved_players = set()  # Set to store players who moved during "Red Light"
+all_players = set()  # Set to store all detected players
 
-        # Create a vertical box layout
-        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
-        self.box.set_margin_top(40)
-        self.box.set_margin_bottom(40)
-        self.box.set_margin_start(40)
-        self.box.set_margin_end(40)
-        self.add(self.box)
+# Initialize text-to-speech engine
+tts_engine = pyttsx3.init()
+voices = tts_engine.getProperty('voices')
 
-        # Add a header label
-        self.label = Gtk.Label(label="Sailted Fish Controller <*)))><")
-        self.label.set_xalign(0.5)
-        self.box.pack_start(self.label, False, False, 20)
+# Select "Microsoft David Desktop" voice
+for voice in voices:
+    if "David" in voice.name:
+        tts_engine.setProperty('voice', voice.id)
+        break
+tts_engine.setProperty('rate', 150)  # Reduce speed for clarity
+tts_engine.setProperty('volume', 0.9)  # Set volume level
 
-        # Add level selection buttons
-        self.level_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.box.pack_start(self.level_buttons, False, False, 10)
+# -----------------------------------------------------------------------------------------------
+# Levels Definition
+# -----------------------------------------------------------------------------------------------
+level_thresholds = {
+    "easy": 1500,
+    "medium": 1000,
+    "hard": 500,
+}
 
-        for level in ["easy", "medium", "hard"]:
-            button = Gtk.Button(label=level.capitalize())
-            button.connect("clicked", self.on_level_button_clicked, level)
-            self.level_buttons.pack_start(button, True, True, 10)
+def set_level(level):
+    """Set the threshold based on the chosen level."""
+    global threshold
+    if level in level_thresholds:
+        threshold = level_thresholds[level]
+        print(f"Game level set to {level.capitalize()}. Movement threshold: {threshold}")
+    else:
+        print(f"Invalid level: {level}. Defaulting to 'easy'.")
+        threshold = level_thresholds["easy"]
 
-        # Add the Stop button
-        self.stop_button = Gtk.Button(label="Stop")
-        self.stop_button.connect("clicked", self.on_stop_button_clicked)
-        self.box.pack_start(self.stop_button, False, False, 10)
+# -----------------------------------------------------------------------------------------------
+# Game Loop for Red Light, Green Light
+# -----------------------------------------------------------------------------------------------
+def game_loop():
+    global game_state, moved_players, all_players
 
-        # Add a status display area
-        self.status_label = Gtk.Label(label="Status: Ready")
-        self.status_label.set_xalign(0.5)
-        self.status_label.get_style_context().add_class("status")
-        self.box.pack_start(self.status_label, False, False, 20)
+    while True:
+        # Green Light phase (start a new game)
+        game_state = "Green Light"
+        moved_players.clear()  # Reset moved players for the new round
+        all_players.clear()
 
-    def on_level_button_clicked(self, widget, level):
-        """Callback for level selection buttons."""
-        try:
-            script_path = os.path.join(os.path.dirname(__file__), "sailted_fish.py")
-            subprocess.Popen(["python3", script_path, "--level", level, "--input", "rpi"])
-            self.status_label.set_text(f"Status: Game started with {level.capitalize()} level!")
-        except Exception as e:
-            self.status_label.set_text(f"Status: Error: {e}")
+        # Red Light phase
+        print("\033[30;45m!!! 1 !!!\033[0m")
+        time.sleep(1)
+        print("\033[30;45m!!! 2 !!!\033[0m")
+        time.sleep(1)
+        print("\033[30;45m!!! 3 !!!\033[0m")
+        time.sleep(1)
+        print("\033[30;45mSailted Fish\033[0m")
+        print("\033[30;45mSTOPPPPPPP\033[0m")
+        game_state = "Red Light"
+        time.sleep(20)  # Duration for Red Light
 
-    def on_stop_button_clicked(self, widget):
-        """Callback for the Stop button."""
-        try:
-            result = subprocess.run(["pgrep", "-f", "sailted_fish.py"], stdout=subprocess.PIPE, text=True)
-            if result.stdout:
-                for pid in result.stdout.split():
-                    os.kill(int(pid), signal.SIGTERM)
-                self.status_label.set_text("Status: Game stopped!")
+        # Determine winner during Red Light
+        if len(all_players) > 1:
+            non_moved_players = all_players - moved_players
+            if len(non_moved_players) == 1:
+                winner = non_moved_players.pop()
+                print(f"\033[100mPlayer {winner} is the winner!\033[0m")
+                tts_engine.say(f"Player {winner} is the winner")
+                tts_engine.runAndWait()
+                tts_engine.stop()
+            elif len(non_moved_players) > 1:
+                print("\033[30;47mMultiple players didn't move. No winner this round.\033[0m")
+                tts_engine.say(f"No winner this round")
+                tts_engine.runAndWait()
+                tts_engine.stop()
             else:
-                self.status_label.set_text("Status: No running game process found.")
-        except Exception as e:
-            self.status_label.set_text(f"Status: Error: {e}")
+                print("\033[30;47mNo winner. All players moved during Red Light!\033[0m")
 
+        print("\033[30;47mPausing for 10 seconds before the next round...\033[0m")
+        time.sleep(5)
+        print("\033[30;47mGet ready! staring in 5 seconds...\033[0m")
+        time.sleep(5)
+
+# -----------------------------------------------------------------------------------------------
+# User-defined callback function
+# -----------------------------------------------------------------------------------------------
+def app_callback(pad, info, user_data):
+    global game_state, frame_history, moved_players, threshold, all_players
+
+    # Get the GstBuffer from the probe info
+    buffer = info.get_buffer()
+    if buffer is None:
+        return Gst.PadProbeReturn.OK
+
+    # Get video frame
+    format, width, height = get_caps_from_pad(pad)
+    frame = None
+    if user_data.use_frame and format and width and height:
+        frame = get_numpy_from_buffer(buffer, format, width, height)
+
+    # Get the detections from the buffer
+    roi = hailo.get_roi_from_buffer(buffer)
+    detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
+
+    # Keypoints for COCO body parts
+    keypoints = get_keypoints()
+
+    # Process detections
+    for detection in detections:
+        if detection.get_label() == "person":
+            track_id = 0
+            track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
+            if len(track) == 1:
+                track_id = track[0].get_id()
+
+            person_id = track_id  # Unique ID for each detection
+            all_players.add(person_id)  # Add to the set of all players
+
+            # Get bounding box and landmarks
+            bbox = detection.get_bbox()
+            landmarks = detection.get_objects_typed(hailo.HAILO_LANDMARKS)
+            if landmarks:
+                points = landmarks[0].get_points()
+                if person_id not in frame_history:
+                    frame_history[person_id] = []
+
+                # Extract keypoint coordinates
+                keypoint_coords = [
+                    (int((point.x() * bbox.width() + bbox.xmin()) * width),
+                     int((point.y() * bbox.height() + bbox.ymin()) * height))
+                    for point in points
+                ]
+
+                frame_history[person_id].append(keypoint_coords)
+
+                # Detect movement during "Red Light"
+                if game_state == "Red Light" and person_id not in moved_players:
+                    if len(frame_history[person_id]) > 1:
+                        prev_coords = frame_history[person_id][-2]
+                        curr_coords = frame_history[person_id][-1]
+
+                        # Calculate movement by summing the distance between keypoints
+                        movement = sum(np.linalg.norm(np.array(curr) - np.array(prev))
+                                       for prev, curr in zip(prev_coords, curr_coords))
+                        if movement > threshold:
+                            moved_players.add(person_id)
+                            print(f"\033[41mPlayer {person_id} moved during Red Light!\033[0m")  # Red background
+                            tts_engine.say(f"Player {person_id} moved you salted fish")
+                            tts_engine.runAndWait()
+                            tts_engine.stop()
+
+    # Draw keypoints on the frame (optional visualisation)
+    if user_data.use_frame and frame is not None:
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        for person_id, keypoints in frame_history.items():
+            if keypoints:
+                for point in keypoints[-1]:  # Draw the most recent keypoints
+                    cv2.circle(frame, point, 5, (0, 255, 0), -1)
+        user_data.set_frame(frame)
+
+    return Gst.PadProbeReturn.OK
+
+# -----------------------------------------------------------------------------------------------
+# Keypoints Mapping
+# -----------------------------------------------------------------------------------------------
+def get_keypoints():
+    """Get the COCO keypoints and their left/right flip correspondence map."""
+    return {
+        'nose': 0,
+        'left_eye': 1,
+        'right_eye': 2,
+        'left_ear': 3,
+        'right_ear': 4,
+        'left_shoulder': 5,
+        'right_shoulder': 6,
+        'left_elbow': 7,
+        'right_elbow': 8,
+        'left_wrist': 9,
+        'right_wrist': 10,
+        'left_hip': 11,
+        'right_hip': 12,
+        'left_knee': 13,
+        'right_knee': 14,
+        'left_ankle': 15,
+        'right_ankle': 16,
+    }
+
+# -----------------------------------------------------------------------------------------------
+# Main Function
+# -----------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    win = MainGUI()
-    win.connect("destroy", Gtk.main_quit)
-    win.show_all()
-    Gtk.main()
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Red Light Green Light Game")
+    parser.add_argument(
+        "--level",
+        type=str,
+        choices=["easy", "medium", "hard"],
+        default="easy",
+        help="Set the game difficulty level (default: easy)",
+    )
+    parser.add_argument(
+        "--input",
+        type=str,
+        required=True,
+        help="Specify the input source (e.g., rpi or a video file path)",
+    )
+    args = parser.parse_args()
+
+    # Set the level based on the argument
+    set_level(args.level)
+    if "--level" in sys.argv:
+        index = sys.argv.index("--level")
+        del sys.argv[index:index + 2]  # Remove both --level and its value
+
+    # Print the input source
+    print(f"Input source: {args.input}")
+
+    # Create an instance of the user app callback class
+    user_data = user_app_callback_class()
+
+    # Start the game loop in a separate thread
+    game_thread = threading.Thread(target=game_loop, daemon=True)
+    game_thread.start()
+
+    # Run the GStreamer application
+    app = GStreamerPoseEstimationApp(app_callback, user_data)
+    app.run()
