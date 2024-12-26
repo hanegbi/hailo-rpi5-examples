@@ -114,10 +114,10 @@ class MainGUI(Gtk.Window):
             self.current_process = None
             self.current_level = None
 
-            # Stop any playing music and restart idle music
+            # Stop and quit pygame music
             if pygame.mixer.music.get_busy():
                 pygame.mixer.music.stop()
-            pygame.mixer.music.play(-1)
+            pygame.mixer.quit()
 
             # Update status
             self.status_label.set_text("Game stopped!")
