@@ -74,7 +74,7 @@ class MainGUI(Gtk.Window):
         self.box.pack_start(self.stop_button, False, False, 10)
 
         # Add a status display area
-        self.status_label = Gtk.Label(label="Status: Ready")
+        self.status_label = Gtk.Label(label="Choose a level to start the game!")
         self.status_label.set_xalign(0.5)
         self.status_label.get_style_context().add_class("status")
         self.box.pack_start(self.status_label, False, False, 20)
@@ -82,21 +82,21 @@ class MainGUI(Gtk.Window):
     def on_level_button_clicked(self, widget, level):
         """Callback for level selection buttons."""
         if self.current_process:
-            self.status_label.set_text("Status: Stop the current game to change level!")
+            self.status_label.set_text("Stop the current game to change level!")
             return
 
         try:
             script_path = os.path.join(os.path.dirname(__file__), "sailted_fish.py")
             self.current_process = subprocess.Popen(["python3", script_path, "--level", level, "--input", "rpi"])
             self.current_level = level
-            self.status_label.set_text(f"Status: Game started with {level.capitalize()} level!")
+            self.status_label.set_text(f"Game started with {level.capitalize()} level!")
         except Exception as e:
-            self.status_label.set_text(f"Status: Error: {e}")
+            self.status_label.set_text(f"Error: {e}")
 
     def on_stop_button_clicked(self, widget):
         """Callback for the Stop button."""
         if not self.current_process:
-            self.status_label.set_text("Status: No running game to stop!")
+            self.status_label.set_text("No running game to stop!")
             return
 
         try:
@@ -104,9 +104,9 @@ class MainGUI(Gtk.Window):
             self.current_process.wait()
             self.current_process = None
             self.current_level = None
-            self.status_label.set_text("Status: Game stopped!")
+            self.status_label.set_text("Game stopped!")
         except Exception as e:
-            self.status_label.set_text(f"Status: Error: {e}")
+            self.status_label.set_text(f"Error: {e}")
 
 if __name__ == "__main__":
     win = MainGUI()
